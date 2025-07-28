@@ -1,4 +1,4 @@
-# codebasics ML course: codebasics.io, all rights reserverd
+
 
 import os
 import pandas as pd
