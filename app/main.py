@@ -1,25 +1,75 @@
 import streamlit as st
 from prediction_helper import predict
-
-st.set_page_config(page_title="Health Insurance Premium Predictor", page_icon="💰", layout="centered")
-
-# Title and styling
 st.markdown("""
-    <div style="background-color:#e6f2ff; padding: 15px; border-radius: 12px;">
-        <h1 style="
-            color: #003366;
-            text-align: center;
-            margin: 0;
-            font-size: 28px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        ">
-            💼 Health Insurance Premium Predictor
-        </h1>
-    </div>
+<div class="header-container">
+    <h1>🧮 PremiumCalc – Health Insurance Estimator</h1>
+</div>
 """, unsafe_allow_html=True)
 
+
+st.markdown("""
+<style>
+/* 📱 Mobile-Friendly Layout */
+@media (max-width: 768px) {
+    .block-container {
+        padding: 1rem !important;
+    }
+    h1, h2, h3 {
+        font-size: 1.2rem !important;
+    }
+}
+
+/* 🎯 Stylish Predict Button */
+div.stButton > button {
+    background: linear-gradient(90deg, #003366, #3399ff);
+    color: white;
+    font-weight: bold;
+    padding: 0.6em 2em;
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 51, 102, 0.3);
+}
+div.stButton > button:hover {
+    background: linear-gradient(90deg, #0059b3, #66ccff);
+    transform: scale(1.05);
+    color: #f2f2f2;
+    box-shadow: 0 6px 14px rgba(0, 51, 102, 0.5);
+}
+
+/* ✨ Input Hover Effects */
+.stNumberInput, .stSelectbox, .stTextInput {
+    transition: all 0.2s ease-in-out;
+}
+.stNumberInput:hover, .stSelectbox:hover, .stTextInput:hover {
+    box-shadow: 0 0 10px rgba(0, 102, 204, 0.3);
+    transform: scale(1.02);
+    border-radius: 8px;
+}
+
+/* 🔷 Animated Header */
+.header-container {
+    background: linear-gradient(135deg, #cce6ff, #e6f2ff);
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0, 51, 102, 0.2);
+    text-align: center;
+    font-family: 'Segoe UI', sans-serif;
+    margin-bottom: 20px;
+}
+.header-container h1 {
+    color: #003366;
+    font-size: 30px;
+    margin: 0;
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+</style>
+""", unsafe_allow_html=True)
 
 st.markdown("## 🔎 Enter the details below:")
 
