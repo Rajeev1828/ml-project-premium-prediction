@@ -1,18 +1,21 @@
 
-
 import os
 import pandas as pd
 import joblib
 
+# Define base directory for loading artifacts
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Load pre-trained models and scalers
 model_young = joblib.load(os.path.join(BASE_DIR, "artifacts", "model_young.joblib"))
 model_rest = joblib.load(os.path.join(BASE_DIR, "artifacts", "model_rest.joblib"))
 scaler_young = joblib.load(os.path.join(BASE_DIR, "artifacts", "scaler_young.joblib"))
 scaler_rest = joblib.load(os.path.join(BASE_DIR, "artifacts", "scaler_rest.joblib"))
 
-
 def calculate_normalized_risk(medical_history):
+    """
+    Assigns a risk score based on user's medical history and normalizes it.
+    """
     risk_scores = {
         "diabetes": 6,
         "heart disease": 8,
@@ -21,22 +24,15 @@ def calculate_normalized_risk(medical_history):
         "no disease": 0,
         "none": 0
     }
-    # Split the medical history into potential two parts and convert to lowercase
     diseases = medical_history.lower().split(" & ")
-
-    # Calculate the total risk score by summing the risk scores for each part
-    total_risk_score = sum(risk_scores.get(disease, 0) for disease in diseases)  # Default to 0 if disease not found
-
-    max_score = 14 # risk score for heart disease (8) + second max risk score (6) for diabetes or high blood pressure
-    min_score = 0  # Since the minimum score is always 0
-
-    # Normalize the total risk score
-    normalized_risk_score = (total_risk_score - min_score) / (max_score - min_score)
-
+    total_risk_score = sum(risk_scores.get(disease, 0) for disease in diseases)
+    normalized_risk_score = total_risk_score / 14  # Max possible score is 14
     return normalized_risk_score
 
 def preprocess_input(input_dict):
-    # Define the expected columns and initialize the DataFrame with zeros
+    """
+    Converts user input into a model-friendly format with appropriate encoding and scaling.
+    """
     expected_columns = [
         'age', 'number_of_dependants', 'income_lakhs', 'insurance_plan', 'genetical_risk', 'normalized_risk_score',
         'gender_Male', 'region_Northwest', 'region_Southeast', 'region_Southwest', 'marital_status_Unmarried',
@@ -45,80 +41,57 @@ def preprocess_input(input_dict):
     ]
 
     insurance_plan_encoding = {'Bronze': 1, 'Silver': 2, 'Gold': 3}
-
     df = pd.DataFrame(0, columns=expected_columns, index=[0])
-    # df.fillna(0, inplace=True)
 
-    # Manually assign values for each categorical input based on input_dict
-    for key, value in input_dict.items():
-        if key == 'Gender' and value == 'Male':
-            df['gender_Male'] = 1
-        elif key == 'Region':
-            if value == 'Northwest':
-                df['region_Northwest'] = 1
-            elif value == 'Southeast':
-                df['region_Southeast'] = 1
-            elif value == 'Southwest':
-                df['region_Southwest'] = 1
-        elif key == 'Marital Status' and value == 'Unmarried':
-            df['marital_status_Unmarried'] = 1
-        elif key == 'BMI Category':
-            if value == 'Obesity':
-                df['bmi_category_Obesity'] = 1
-            elif value == 'Overweight':
-                df['bmi_category_Overweight'] = 1
-            elif value == 'Underweight':
-                df['bmi_category_Underweight'] = 1
-        elif key == 'Smoking Status':
-            if value == 'Occasional':
-                df['smoking_status_Occasional'] = 1
-            elif value == 'Regular':
-                df['smoking_status_Regular'] = 1
-        elif key == 'Employment Status':
-            if value == 'Salaried':
-                df['employment_status_Salaried'] = 1
-            elif value == 'Self-Employed':
-                df['employment_status_Self-Employed'] = 1
-        elif key == 'Insurance Plan':  # Correct key usage with case sensitivity
-            df['insurance_plan'] = insurance_plan_encoding.get(value, 1)
-        elif key == 'Age':  # Correct key usage with case sensitivity
-            df['age'] = value
-        elif key == 'Number of Dependants':  # Correct key usage with case sensitivity
-            df['number_of_dependants'] = value
-        elif key == 'Income in Lakhs':  # Correct key usage with case sensitivity
-            df['income_lakhs'] = value
-        elif key == "Genetical Risk":
-            df['genetical_risk'] = value
+    # Populate dataframe based on input values
+    if input_dict.get('Gender') == 'Male':
+        df['gender_Male'] = 1
+    region = input_dict.get('Region')
+    if region in ['Northwest', 'Southeast', 'Southwest']:
+        df[f'region_{region}'] = 1
+    if input_dict.get('Marital Status') == 'Unmarried':
+        df['marital_status_Unmarried'] = 1
 
-    # Assuming the 'normalized_risk_score' needs to be calculated based on the 'age'
-    df['normalized_risk_score'] = calculate_normalized_risk(input_dict['Medical History'])
-    df = handle_scaling(input_dict['Age'], df)
+    bmi = input_dict.get('BMI Category')
+    if bmi in ['Obesity', 'Overweight', 'Underweight']:
+        df[f'bmi_category_{bmi}'] = 1
 
-    return df
+    smoking = input_dict.get('Smoking Status')
+    if smoking in ['Occasional', 'Regular']:
+        df[f'smoking_status_{smoking}'] = 1
+
+    employment = input_dict.get('Employment Status')
+    if employment in ['Salaried', 'Self-Employed']:
+        df[f'employment_status_{employment}'] = 1
+
+    df['insurance_plan'] = insurance_plan_encoding.get(input_dict.get('Insurance Plan'), 1)
+    df['age'] = input_dict.get('Age', 0)
+    df['number_of_dependants'] = input_dict.get('Number of Dependants', 0)
+    df['income_lakhs'] = input_dict.get('Income in Lakhs', 0)
+    df['genetical_risk'] = input_dict.get('Genetical Risk', 0)
+
+    df['normalized_risk_score'] = calculate_normalized_risk(input_dict.get('Medical History', 'none'))
+    return handle_scaling(df['age'][0], df)
 
 def handle_scaling(age, df):
-    # scale age and income_lakhs column
-    if age <= 25:
-        scaler_object = scaler_young
-    else:
-        scaler_object = scaler_rest
-
+    """
+    Applies appropriate scaler based on user's age.
+    """
+    scaler_object = scaler_young if age <= 25 else scaler_rest
     cols_to_scale = scaler_object['cols_to_scale']
     scaler = scaler_object['scaler']
 
-    df['income_level'] = None # since scaler object expects income_level supply it. This will have no impact on anything
+    df['income_level'] = None  # Dummy column for compatibility
     df[cols_to_scale] = scaler.transform(df[cols_to_scale])
-
-    df.drop('income_level', axis='columns', inplace=True)
+    df.drop('income_level', axis=1, inplace=True)
 
     return df
 
 def predict(input_dict):
+    """
+    Runs prediction based on preprocessed user input.
+    """
     input_df = preprocess_input(input_dict)
+    model = model_young if input_dict['Age'] <= 25 else model_rest
+    return int(model.predict(input_df)[0])
 
-    if input_dict['Age'] <= 25:
-        prediction = model_young.predict(input_df)
-    else:
-        prediction = model_rest.predict(input_df)
-
-    return int(prediction[0])
