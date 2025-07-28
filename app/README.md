@@ -4,4 +4,4 @@ This project predicts health insurance premium based on user inputs using Machin
 
 ### 📷 Preview
 
-![Prediction Preview](app/premium-prediction.png)
+![Prediction Preview](app/premium_prediction.png)
